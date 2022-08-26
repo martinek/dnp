@@ -129,6 +129,52 @@ Dostupne prikazy:
         Profession.explain(player)
         break
 
+      case ".pick":
+        player.pick(args.join(" "))
+        break
+
+      case ".drop":
+        player.drop(args.join(" "))
+        break
+
+      case ".inventory":
+        player.showInventory()
+        break
+
+      case ".use":
+        // .use pocitac, ev3 kocka, foo, booo
+        // tool = "pocitac", material = "ev3 kocka"
+        const [tool, material] = args
+          .join(" ")
+          .split(",")
+          .map((s) => s.trim())
+        player.use(tool, material)
+        break
+
+      case ".combine":
+        // .combine lego kocka ,lego kocka, lego kocka, lego kocka
+        const ingredients = args
+          .join(" ")
+          .split(",")
+          .map((s) => s.trim())
+        player.combine(ingredients)
+        break
+
+      case ".debug_locations":
+        console.log(
+          locations
+            .map((r) => `${r.name}: ${r.items.map((i) => i.name).join(", ")}`)
+            .join("\n")
+        )
+        break
+
+      case ".tp":
+        const newLocation = locations.find((l) => l.name === args.join(" "))
+        if (newLocation) {
+          player.location = newLocation
+        }
+        break
+
       default:
         break
     }
@@ -140,6 +186,29 @@ Dostupne prikazy:
     console.log("Closing connection with the client")
   })
 })
+
+const items = [
+  "lego kocka",
+  "lego kocka",
+  "lego kocka",
+  "lego kocka",
+  "3d tlaciaren",
+  "filament",
+  "pocitac",
+  "EV3 kocka",
+  "kable",
+]
+
+const recepies = [
+  {
+    ingredients: ["lego kocka", "lego kocka", "lego kocka", "lego kocka"],
+    result: ["lego ram"],
+  },
+  {
+    ingredients: ["lego ram", "kolieska", "riadiaci modul", "kable"],
+    result: ["robot"],
+  },
+]
 
 const players = []
 
@@ -155,6 +224,7 @@ class Player {
     this.defense = rand(0, 2)
     this.class = undefined
     this.lastInput = ""
+    this.inventory = []
   }
 
   pickClass(enteredProfession) {
@@ -181,12 +251,12 @@ class Player {
   look() {
     this.tell(
       `Lokacia "${this.location.name}"
-${this.location.description}
-Vies sa pohnut do: ${this.location.options.join(", ")}
+Vies sa pohnut do: ${this.location.connections.map((l) => l.name).join(", ")}
 Vidim hracov: ${this.location
         .players()
         .map((p) => p.name)
         .join(", ")}
+Vidim itemy: ${this.location.items.map((item) => item.name).join(", ")}
 `
     )
   }
@@ -195,7 +265,9 @@ Vidim hracov: ${this.location
     const newLocation = locations.find((l) => l.name === newLocationName)
     if (newLocation === undefined) {
       this.tell(`Nepoznam ${newLocationName}`)
-    } else if (this.location.options.includes(newLocation.name)) {
+    } else if (
+      this.location.connections.find((l) => l.name === newLocation.name)
+    ) {
       this.location.notifyLeaving(this)
       this.location = newLocation
       this.look()
@@ -356,13 +428,124 @@ ${this.name} zabil ${this.inCombatWith.name}
       this.isDead = true
     }
   }
+
+  pick(itemName) {
+    if (this.location.hasItem(itemName)) {
+      const i = this.location.items.findIndex((item) => {
+        return item.name === itemName
+      })
+      if (this.location.items[i].isPickable()) {
+        const removed = this.location.items.splice(i, 1)[0]
+        this.inventory.push(removed)
+        this.tell(`Zdvihol si ${removed.name}`)
+      } else {
+        this.tell("Not today Rambo!")
+      }
+    } else {
+      this.tell("Co chces zdvihnut?")
+    }
+  }
+
+  drop(itemName) {
+    if (this.hasItem(itemName)) {
+      const i = this.inventory.findIndex((item) => {
+        return item.name === itemName
+      })
+      const removed = this.inventory.splice(i, 1)[0]
+      this.location.items.push(removed)
+      this.tell(`Zahodil si ${removed.name}`)
+    } else {
+      this.tell("Co chces zahodit?")
+    }
+  }
+
+  use(tool, material) {
+    if (this.location.hasItem(tool)) {
+      if (this.hasItem(material)) {
+        const toolIndex = this.location.items.findIndex(
+          (item) => item.name === tool
+        )
+        const result = this.location.items[toolIndex].use(material)
+        if (result === false) {
+          this.tell("To sa neda takto pouzit")
+          return
+        }
+
+        this.inventory.push(result)
+        const i = this.inventory.findIndex((item) => item.name === material)
+        this.inventory.splice(i, 1)
+
+        this.tell(`Vyrobil si: ${result.name}`)
+        this.showInventory()
+      } else {
+        this.tell("To nemas")
+      }
+    } else {
+      this.tell("V tejto lokacii to neni")
+    }
+  }
+
+  combine(ingredients) {
+    const needle = arrayHash(ingredients)
+    const recepie = recepies.find(
+      (recepie) => arrayHash(recepie.ingredients) === needle
+    )
+    if (recepie === undefined) {
+      this.tell("Nope!")
+      return
+    }
+    const tmpInventory = this.inventory.slice(0)
+    for (const ingredient of ingredients) {
+      const idx = tmpInventory.findIndex((item) => item.name === ingredient)
+      if (idx === -1) {
+        this.tell("Nemas vsetko co potrebujes v inventari")
+        return
+      }
+      tmpInventory.splice(idx, 1)
+    }
+    this.inventory = tmpInventory
+    recepie.result.forEach((rName) => {
+      this.inventory.push(new Item(rName))
+      this.tell(`Vyrobil si: ${rName}`)
+
+      if (rName === "robot") {
+        const time = startTime - Date.now()
+        players.forEach((p) => {
+          p.tell(`MAME ROBOTA, trvalo to: ${time}`)
+        })
+      }
+    })
+    this.showInventory()
+  }
+
+  showInventory() {
+    this.tell(
+      `V inventari: ${this.inventory.map((item) => item.name).join(", ")}`
+    )
+  }
+
+  hasItem(itemName) {
+    return (
+      this.inventory.filter((item) => {
+        return item.name === itemName
+      }).length > 0
+    )
+  }
 }
 
 class Location {
-  constructor(name, description, options) {
+  constructor(name) {
     this.name = name
-    this.description = description
-    this.options = options
+    this.connections = []
+    this.items = []
+  }
+
+  connect(otherRoom) {
+    if (this.connections.includes(otherRoom)) {
+      return
+    }
+    this.connections.push(otherRoom)
+    otherRoom.connections.push(this)
   }
 
   players() {
@@ -381,6 +564,14 @@ class Location {
       if (p === leavingPlayer) return
       p.tell(`${leavingPlayer.name} odisiel z miestnosti`)
     })
+  }
+
+  hasItem(itemName) {
+    return (
+      this.items.filter((item) => {
+        return item.name === itemName
+      }).length > 0
+    )
   }
 }
 
@@ -415,20 +606,27 @@ class Combat {
   }
 }
 
+const location_vonku = new Location("Vonku")
+const location_chodba = new Location("Chodba")
+const location_av = new Location("AV")
+const location_chodba_na_poschodi = new Location("Chodba na poschodi")
+const location_vypoctovka = new Location("Vypoctovka")
+const location_konstrukcia = new Location("Konstrukcia")
+
+location_vonku.connect(location_chodba)
+location_chodba.connect(location_chodba_na_poschodi)
+location_chodba.connect(location_av)
+location_chodba_na_poschodi.connect(location_vypoctovka)
+location_chodba_na_poschodi.connect(location_konstrukcia)
+location_av.connect(location_chodba_na_poschodi)
+
 const locations = [
-  new Location(
-    "Parkovisko",
-    "Vidis prazdne parkovisko vylozene macacimi hlavami",
-    ["Chodba"]
-  ),
-  // new Location("Chodba", "Vidis drevene dvere vpredu aj vzadu", [
-  //   "Parkovisko",
-  //   "Krb",
-  //   "Bar",
-  // ]),
-  // new Location("Bar", "Vidis dreveny pult", ["Chodba"]),
-  // new Location("Krb", "Vidis gulaty krb", ["Zachody", "Bar"]),
-  // new Location("Zachody", "Vidis zachody", ["Krb"]),
+  location_vonku,
+  location_chodba,
+  location_av,
+  location_chodba_na_poschodi,
+  location_vypoctovka,
+  location_konstrukcia,
 ]
 
 class Profession {
@@ -461,6 +659,47 @@ const professions = [
   new Profession("Vypoctovkar", -1, -1, 2, "crit"),
 ]
 
-const rand = (min, max) => {
+class Item {
+  constructor(name) {
+    this.name = name
+  }
+
+  isPickable() {
+    if (this.name === "pocitac" || this.name === "3d tlaciaren") {
+      return false
+    } else {
+      return true
+    }
+  }
+
+  use(material) {
+    if (this.name === "pocitac") {
+      if (material === "EV3 kocka") {
+        return new Item("riadiaci modul")
+      }
+    }
+    if (this.name === "3d tlaciaren") {
+      if (material === "filament") {
+        return new Item("kolieska")
+      }
+    }
+    return false
+  }
+}
+
+items.forEach((itemName) => {
+  const item = new Item(itemName)
+  const location = locations[rand(0, locations.length - 1)]
+  location.items.push(item)
+})
+
+function rand(min, max) {
   return Math.floor(Math.random() * (max - min)) + min
+}
+
+function arrayHash(strings) {
+  return strings
+    .slice(0)
+    .sort((a, b) => a.localeCompare(b))
+    .join("@")
 }
