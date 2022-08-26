@@ -175,6 +175,10 @@ Dostupne prikazy:
         }
         break
 
+      case ".hit":
+        player.health -= Number(args[0])
+        break
+
       default:
         break
     }
@@ -218,7 +222,7 @@ class Player {
     this.name = undefined
     this.location = undefined
     this.health = rand(10, 20)
-    this.health_check = this.health
+    this.base_health = this.health
     this.attack = rand(2, 5)
     this.buff = 1
     this.defense = rand(0, 2)
@@ -228,14 +232,16 @@ class Player {
   }
 
   pickClass(enteredProfession) {
-    const profession = professions.find((l) => l.name === enteredProfession)
+    const profession = Profession.professions.find(
+      (l) => l.name === enteredProfession
+    )
     if (profession === undefined) {
       this.tell(`Nepoznam profesiu ${enteredProfession}! Skus to znova!`)
       return false
     } else {
       this.class = profession
       this.health += profession.hp_mod
-      this.health_check = this.health
+      this.base_health = this.health
       this.defense += profession.def_mod
       this.attack += profession.atk_mod
       this.perk = profession.perk
@@ -461,22 +467,26 @@ ${this.name} zabil ${this.inCombatWith.name}
 
   use(tool, material) {
     if (this.location.hasItem(tool)) {
-      if (this.hasItem(material)) {
+      if (this.hasItem(material) || material === undefined) {
         const toolIndex = this.location.items.findIndex(
           (item) => item.name === tool
         )
-        const result = this.location.items[toolIndex].use(material)
+        const result = this.location.items[toolIndex].use(material, this)
         if (result === false) {
           this.tell("To sa neda takto pouzit")
           return
         }
 
         this.inventory.push(result)
-        const i = this.inventory.findIndex((item) => item.name === material)
-        this.inventory.splice(i, 1)
+        if (material !== undefined) {
+          const i = this.inventory.findIndex((item) => item.name === material)
+          this.inventory.splice(i, 1)
+        }
 
-        this.tell(`Vyrobil si: ${result.name}`)
-        this.showInventory()
+        if (result !== true) {
+          this.tell(`Vyrobil si: ${result.name}`)
+          this.showInventory()
+        }
       } else {
         this.tell("To nemas")
       }
@@ -573,6 +583,20 @@ class Location {
       }).length > 0
     )
   }
+
+  canSpawn(item) {
+    switch (this.name) {
+      case "Zdravotnicka":
+        return false
+
+      default:
+        return true
+    }
+  }
+
+  spawnItem(item) {
+    this.items.push(item)
+  }
 }
 
 class Combat {
@@ -606,30 +630,14 @@ class Combat {
   }
 }
 
-const location_vonku = new Location("Vonku")
-const location_chodba = new Location("Chodba")
-const location_av = new Location("AV")
-const location_chodba_na_poschodi = new Location("Chodba na poschodi")
-const location_vypoctovka = new Location("Vypoctovka")
-const location_konstrukcia = new Location("Konstrukcia")
-
-location_vonku.connect(location_chodba)
-location_chodba.connect(location_chodba_na_poschodi)
-location_chodba.connect(location_av)
-location_chodba_na_poschodi.connect(location_vypoctovka)
-location_chodba_na_poschodi.connect(location_konstrukcia)
-location_av.connect(location_chodba_na_poschodi)
-
-const locations = [
-  location_vonku,
-  location_chodba,
-  location_av,
-  location_chodba_na_poschodi,
-  location_vypoctovka,
-  location_konstrukcia,
-]
-
 class Profession {
+  static professions = [
+    // profesia, HP modifier, DEF modifier, ATK modifier, perk
+    new Profession("Tlaciar", 0, 2, -2, "block"),
+    new Profession("Konstrukter", 1, -1, 0, "no_def"),
+    new Profession("Vypoctovkar", -1, -1, 2, "crit"),
+  ]
+
   constructor(name, hp_mod, def_mod, atk_mod, perk) {
     this.name = name
     this.hp_mod = hp_mod
@@ -652,13 +660,6 @@ Vypoctovkar -  -1, -1, 2, "crit
   }
 }
 
-const professions = [
-  // profesia, HP modifier, DEF modifier, ATK modifier, perk
-  new Profession("Tlaciar", 0, 2, -2, "block"),
-  new Profession("Konstrukter", 1, -1, 0, "no_def"),
-  new Profession("Vypoctovkar", -1, -1, 2, "crit"),
-]
-
 class Item {
   constructor(name) {
     this.name = name
@@ -672,7 +673,7 @@ class Item {
     }
   }
 
-  use(material) {
+  use(material, player) {
     if (this.name === "pocitac") {
       if (material === "EV3 kocka") {
         return new Item("riadiaci modul")
@@ -683,14 +684,62 @@ class Item {
         return new Item("kolieska")
       }
     }
+    if (this.name === "lekarnicka 3001") {
+      player.health = player.base_health
+      player.tell(`Pouzil si lekarnicku. Tvoje HP je: ${player.health}`)
+      return true
+    }
     return false
   }
 }
 
+const location_vonku = new Location("Vonku")
+const location_chodba = new Location("Chodba")
+const location_av = new Location("AV")
+const location_bar = new Location("Bar")
+const location_nad_schodami = new Location("Nad schodami")
+const location_chodba_na_poschodi = new Location("Chodba na poschodi")
+const location_vypoctovka = new Location("Vypoctovka")
+const location_konstrukcia = new Location("Konstrukcia")
+const location_zdravotnicka = new Location("Zdravotnicka")
+location_zdravotnicka.spawnItem(new Item("lekarnicka 3001"))
+const location_3d_tlac = new Location("3D tlac")
+
+location_vonku.connect(location_chodba)
+
+location_chodba.connect(location_nad_schodami)
+location_chodba.connect(location_av)
+location_chodba.connect(location_bar)
+
+location_nad_schodami.connect(location_vypoctovka)
+location_nad_schodami.connect(location_konstrukcia)
+location_nad_schodami.connect(location_chodba_na_poschodi)
+
+location_chodba_na_poschodi.connect(location_zdravotnicka)
+location_chodba_na_poschodi.connect(location_av)
+location_chodba_na_poschodi.connect(location_3d_tlac)
+
+const locations = [
+  location_vonku,
+  location_chodba,
+  location_av,
+  location_bar,
+  location_nad_schodami,
+  location_chodba_na_poschodi,
+  location_vypoctovka,
+  location_konstrukcia,
+  location_zdravotnicka,
+  location_3d_tlac,
+]
+
 items.forEach((itemName) => {
   const item = new Item(itemName)
-  const location = locations[rand(0, locations.length - 1)]
-  location.items.push(item)
+  const location = sample(locations.filter((l) => l.canSpawn(item)))
+  if (!location) {
+    console.error(`Could not spawn item ${itemName}. No locations available.`)
+    process.exit(1)
+  }
+  location.spawnItem(item)
 })
 
 function rand(min, max) {
@@ -702,4 +751,8 @@ function arrayHash(strings) {
     .slice(0)
     .sort((a, b) => a.localeCompare(b))
     .join("@")
+}
+
+function sample(array) {
+  return array[rand(0, array.length - 1)]
 }
