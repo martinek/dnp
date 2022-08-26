@@ -7,30 +7,62 @@ server.listen(port, function () {
   console.log(`Server listening on:${port}.`)
 })
 
+let counter = 0
+
 server.on("connection", function (socket) {
   const player = new Player(socket)
+  counter += 1
+
+  if (counter < 3) {
+    if (counter == 1) {
+      player.name = "Alice"
+      player.pickClass("Konstrukter")
+    }
+
+    if (counter == 2) {
+      player.name = "Bob"
+      player.pickClass("Vypoctovkar")
+    }
+
+    player.location = locations[rand(0, locations.length)]
+    player.look()
+    player.location.notifyEntering(player)
+  }
+
   players.push(player)
   console.log("A new connection has been established.")
-  player.tell("Vitaj, napis si meno:")
+
+  if (player.name === undefined) {
+    player.tell("Vitaj, napis si meno:")
+  }
 
   socket.on("data", function (chunk) {
     let input = chunk.toString().trim()
 
     if (player.name === undefined) {
       player.name = input
-      player.location = locations[rand(0, locations.length)]
       player.tell(`Ahoj ${player.name}`)
-      player.look()
+      Profession.explain(player)
       console.log(`Player ${player.name} connected`)
-      player.location.notifyEntering(player)
       return
+    }
+
+    if (player.class === undefined) {
+      if (player.pickClass(input)) {
+        player.location = locations[rand(0, locations.length)]
+        player.look()
+        player.location.notifyEntering(player)
+      } else {
+        Profession.explain(player)
+        return
+      }
     }
 
     if (input === ".r") {
       input = player.lastInput
     }
 
-    let [command, ...args] = input.split(" ")
+    const [command, ...args] = input.split(" ")
     console.log(`Player ${player.name}: ${command}`)
     if (player.isDead) {
       player.tell("Dead man tells no tales")
@@ -93,6 +125,10 @@ Dostupne prikazy:
         player.executeBuff()
         break
 
+      case ".classes":
+        Profession.explain(player)
+        break
+
       default:
         break
     }
@@ -113,10 +149,29 @@ class Player {
     this.name = undefined
     this.location = undefined
     this.health = rand(10, 20)
+    this.health_check = this.health
     this.attack = rand(2, 5)
     this.buff = 1
-    this.ac = rand(1, 3)
+    this.defense = rand(0, 2)
+    this.class = undefined
     this.lastInput = ""
+  }
+
+  pickClass(enteredProfession) {
+    const profession = professions.find((l) => l.name === enteredProfession)
+    if (profession === undefined) {
+      this.tell(`Nepoznam profesiu ${enteredProfession}! Skus to znova!`)
+      return false
+    } else {
+      this.class = profession
+      this.health += profession.hp_mod
+      this.health_check = this.health
+      this.defense += profession.def_mod
+      this.attack += profession.atk_mod
+      this.perk = profession.perk
+      this.tell(`Vybral si si profesiu ${enteredProfession}!`)
+      return true
+    }
   }
 
   tell(message) {
@@ -167,10 +222,10 @@ Vidim hracov: ${this.location
       `========================
 Statistiky:
   health: ${this.health}
-  ac:     ${this.ac}
   attack: ${this.attack}
-  buff:   ${this.buff}
-========================`
+  defense: ${this.defense}
+  class: ${this.class?.name}
+  perk: ${this.class?.perk}`
     )
   }
 
@@ -180,6 +235,8 @@ Statistiky:
       .find((p) => p.name === otherPlayerName)
     if (otherPlayer === undefined) {
       this.tell("Hraca nevidim")
+    } else if (otherPlayer === this) {
+      this.tell("Nemozes bojovat sam zo sebou!")
     } else {
       otherPlayer.challengedBy = this
       otherPlayer.tell(`${this.name} ta vyziva na boj (.accept / .decline)`)
@@ -219,7 +276,7 @@ Statistiky:
       return
     }
 
-    const amount = Number(amountStr)
+    let amount = Number(amountStr)
     if (isNaN(amount)) {
       this.tell("Kolko?")
       return
@@ -228,14 +285,18 @@ Statistiky:
       return
     }
 
-    const target = 10 + amount + this.inCombatWith.ac
+    // this should be based on luck
+    const perkProc = rand(1, 21) > 14 ? this.class.perk : null
+
+    const targetDef = perkProc == "no_def" ? 0 : this.inCombatWith.defense
+    const target = 10 + amount + targetDef
     const roll = rand(1, 21)
     const totalRoll = roll + this.attack * this.buff
     const isHit = totalRoll >= target
 
     if (!isHit) {
       this.combat.tellAll(
-        `Hrac ${this.name} netrafil (${roll} + ${this.attack} * ${this.buff}/ ${target} (${this.inCombatWith.ac}))`
+        `Hrac ${this.name} netrafil (${roll} + ${this.attack} * ${this.buff}/ ${target} (10 + ${amount} + ${targetDef}))`
       )
       this.buff = 1
       this.combat.nextTurn()
@@ -243,11 +304,25 @@ Statistiky:
       return
     }
 
-    this.combat.tellAll(
-      `Hrac ${this.name} trafil za ${amount} (${roll} + ${this.attack} * ${this.buff}/ ${target} (${this.inCombatWith.ac}))`
-    )
+    if (perkProc == "crit") {
+      this.combat.tellAll("Critical hit! (1.5x)")
+      amount *= 1.5
+    } else if (perkProc == "no_def") {
+      this.combat.tellAll("No defense!")
+    }
+
+    if (this.inCombatWith.perk === "block") {
+      // try rolling for block proc
+      if (rand(1, 21) > 14) {
+        this.combat.tellAll(`Blocked!`)
+        amount = 0
+      }
+    }
+
     this.buff = 1
     this.inCombatWith.takeHit(amount)
+    this.combat.tellAll(`Hrac ${this.name} trafil za ${amount}`)
+
     if (!this.inCombatWith.isDead) {
       this.combat.nextTurn()
       this.combat.reportTurn()
@@ -346,14 +421,44 @@ const locations = [
     "Vidis prazdne parkovisko vylozene macacimi hlavami",
     ["Chodba"]
   ),
-  new Location("Chodba", "Vidis drevene dvere vpredu aj vzadu", [
-    "Parkovisko",
-    "Krb",
-    "Bar",
-  ]),
-  new Location("Bar", "Vidis dreveny pult", ["Chodba"]),
-  new Location("Krb", "Vidis gulaty krb", ["Zachody", "Bar"]),
-  new Location("Zachody", "Vidis zachody", ["Krb"]),
+  // new Location("Chodba", "Vidis drevene dvere vpredu aj vzadu", [
+  //   "Parkovisko",
+  //   "Krb",
+  //   "Bar",
+  // ]),
+  // new Location("Bar", "Vidis dreveny pult", ["Chodba"]),
+  // new Location("Krb", "Vidis gulaty krb", ["Zachody", "Bar"]),
+  // new Location("Zachody", "Vidis zachody", ["Krb"]),
+]
+
+class Profession {
+  constructor(name, hp_mod, def_mod, atk_mod, perk) {
+    this.name = name
+    this.hp_mod = hp_mod
+    this.def_mod = def_mod
+    this.atk_mod = atk_mod
+    this.perk = perk
+  }
+
+  players() {
+    return players.filter((p) => p.profession == this)
+  }
+
+  static explain(player) {
+    player.tell(`=============
+Zoznam povolani:
+Tlaciar -  0, 2, -2, "block"
+Konstrukter -  1, -1, 0, "no_def"
+Vypoctovkar -  -1, -1, 2, "crit
+=============`)
+  }
+}
+
+const professions = [
+  // profesia, HP modifier, DEF modifier, ATK modifier, perk
+  new Profession("Tlaciar", 0, 2, -2, "block"),
+  new Profession("Konstrukter", 1, -1, 0, "no_def"),
+  new Profession("Vypoctovkar", -1, -1, 2, "crit"),
 ]
 
 const rand = (min, max) => {
