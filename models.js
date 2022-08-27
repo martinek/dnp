@@ -281,7 +281,7 @@ ${LONG_DIVIDER}`)
 
   combine(ingredients) {
     const needle = arrayHash(ingredients)
-    const recepie = recepies.find(
+    const recepie = this.location.map.game.recepies.find(
       (recepie) => arrayHash(recepie.ingredients) === needle
     )
     if (recepie === undefined) {
@@ -501,6 +501,7 @@ class Item {
 class Game {
   constructor() {
     this.players = []
+    this.recepies = []
     this.initialize()
   }
 
@@ -513,6 +514,17 @@ class Game {
       process.exit(1)
     }
     zdravotnicka.spawnItem(new Item("lekarnicka 3001"))
+
+    this.recepies = [
+      {
+        ingredients: ["lego kocka", "lego kocka", "lego kocka", "lego kocka"],
+        result: ["lego ram"],
+      },
+      {
+        ingredients: ["lego ram", "kolieska", "riadiaci modul", "kable"],
+        result: ["robot"],
+      },
+    ]
 
     const items = [
       "lego kocka",
