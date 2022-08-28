@@ -10,9 +10,9 @@ class Player {
     this.location = undefined
     this.health = rand(10, 20)
     this.base_health = this.health
-    this.attack = rand(2, 5)
+    this.attack = rand(2, 4)
     this.buff = 1
-    this.defense = rand(0, 2)
+    this.defense = rand(1, 3)
     this.class = undefined
     this.lastInput = ""
     this.inventory = []
@@ -154,12 +154,12 @@ Statistiky:
     const targetDef = perkProc == "no_def" ? 0 : this.inCombatWith.defense
     const target = 10 + amount + targetDef
     const roll = rand(1, 21)
-    const totalRoll = roll + this.attack * this.buff
+    const totalRoll = roll + this.attack + this.buff
     const isHit = totalRoll >= target
 
     if (!isHit) {
       this.combat.tellAll(
-        `Hrac ${this.name} netrafil (${roll} + ${this.attack} * ${this.buff}/ ${target} (10 + ${amount} + ${targetDef}))`
+        `Hrac ${this.name} netrafil (${roll} + ${this.attack} + ${this.buff} / ${target} (10 + ${amount} + ${targetDef}))`
       )
       this.buff = 1
       this.combat.nextTurn()
@@ -202,7 +202,9 @@ ${LONG_DIVIDER}`)
   }
 
   dropAllItems() {
-    this.location.items.push(...this.inventory)
+    if (this.location) {
+      this.location.items.push(...this.inventory)
+    }
   }
 
   executeBuff() {

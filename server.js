@@ -14,24 +14,24 @@ let counter = 0
 server.on("connection", function (socket) {
   const player = new Player(socket)
 
-  // HACK: development
-  counter += 1
-  if (counter < 3) {
-    if (counter == 1) {
-      player.name = "Alice"
-      player.pickClass("Konstrukter")
-    }
+  // // HACK: development
+  // counter += 1
+  // if (counter < 3) {
+  //   if (counter == 1) {
+  //     player.name = "Alice"
+  //     player.pickClass("Konstrukter")
+  //   }
 
-    if (counter == 2) {
-      player.name = "Bob"
-      player.pickClass("Vypoctovkar")
-    }
+  //   if (counter == 2) {
+  //     player.name = "Bob"
+  //     player.pickClass("Vypoctovkar")
+  //   }
 
-    player.location = game.map.getRandomLocation()
-    player.look()
-    player.location.notifyEntering(player)
-  }
-  // END HACK: development
+  //   player.location = game.map.getRandomLocation()
+  //   player.look()
+  //   player.location.notifyEntering(player)
+  // }
+  // // END HACK: development
 
   game.players.push(player)
   console.log("A new connection has been established.")
@@ -67,7 +67,6 @@ server.on("connection", function (socket) {
     }
 
     const [command, ...args] = input.split(" ")
-    console.log(`Player ${player.name}: ${command}`)
     if (player.isDead) {
       player.tell("Dead man tells no tales")
       return
@@ -79,8 +78,12 @@ Dostupne prikazy:
   .help - tento help
   .look - napise co vidi
   .go - presunie ta do lokacie
-  .say - povie do lokacie
-  .yell - povie vsetkym hracom
+  .pick <item name> - zdvihne <item name>
+  .drop <item name> - zahodi <item name>
+  .combine <item name>, <item name>, ... - skombinuje zadane polozky
+  .recepies - vypise recepty // TODO
+  .say - povie do lokacie // DISABLED
+  .yell - povie vsetkym hracom // DISABLED
   .stats - ukaze tvoje statistiky
   .challenge - vyzvi na suboj hraca
     .attack <num> - zautoci s hodnotou <num>
@@ -97,13 +100,13 @@ Dostupne prikazy:
         player.go(args.join(" "))
         break
 
-      case ".say":
-        player.say(args.join(" "))
-        break
+      // case ".say":
+      //   player.say(args.join(" "))
+      //   break
 
-      case ".yell":
-        player.yell(args.join(" "))
-        break
+      // case ".yell":
+      //   player.yell(args.join(" "))
+      //   break
 
       case ".stats":
         player.stats()
@@ -182,8 +185,10 @@ Dostupne prikazy:
         break
 
       default:
+        return
         break
     }
+    console.log(`Player ${player.name}: ${command}`)
 
     player.lastInput = input
   })
