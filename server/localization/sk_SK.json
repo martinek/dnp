@@ -5,7 +5,7 @@
     "server__player_interaction_death": "Dead man tells no tales",
     "server__player_interaction_inv_location": "Invalid location, did you spell it right?",
     "server__player_interaction_inv_command": "Invalid command! use %.help%",
-    "server__player_interaction_disabled_command": "This command is disabled by an adminisrator!",
+    "server__player_interaction_disabled_command": "This command is disabled by an administrator!",
 
     "in_game_translations": {
         
