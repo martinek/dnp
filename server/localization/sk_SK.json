@@ -1,0 +1,8 @@
+{
+    "help_message": "%devider%Dostupne prikazy:\n  .help - tento help\n  .look - napise co vidi\n  .go - presunie ta do lokacie\n  .pick <item name> - zdvihne <item name>\n  .drop <item name> - zahodi <item name>\n  .combine <item name>, <item name>, ... - skombinuje zadane polozky\n  .recepies - vypise recepty // TODO\n  .say - povie do lokacie // DISABLED\n  .yell - povie vsetkym hracom // DISABLED\n  .stats - ukaze tvoje statistiky\n  .challenge - vyzvi na suboj hraca\n    .attack <num> - zautoci s hodnotou <num>\n    .buff - buffnes svoje sance na dalsi utok\n  .r - zopakuje posledny prikaz",
+    "server_welcome_message": "Ahoj, %player%",
+    "server__player_interaction_name": "Vitaj, napis si meno:",
+    "server__player_interaction_death": "Dead man tells no tales",
+    "server__player_interaction_inv_location": "Invalid location, did you spell it right?"
+    
+}

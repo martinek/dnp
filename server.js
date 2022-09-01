@@ -1,19 +1,36 @@
 const Net = require("net")
 const { Game, Player, Profession } = require("./models")
-const port = 8080
+const { readJson } = require("./utils")
 
+const SERVER_FOLDER_PATH = "./server"
+
+const SETTINGS = readJson(`${SERVER_FOLDER_PATH}/index.json`)
+const TRANSLATIONS = readJson(
+  `${SERVER_FOLDER_PATH}/localization/${SETTINGS.server_settings.localization_used}.json`
+)
+
+const port = SETTINGS.server_settings.port
 const server = new Net.Server()
-const game = new Game()
+const game = new Game(TRANSLATIONS, SETTINGS)
 
 server.listen(port, function () {
   console.log(`Server listening on:${port}.`)
 })
+
+const getCommandAlias = (alName) => {
+  return SETTINGS.command_aliases[alName]
+}
+
+const getTranslation = (translation) => {
+  return TRANSLATIONS[translation]
+}
 
 let counter = 0
 
 server.on("connection", function (socket) {
   const player = new Player(socket)
 
+  // TODO: Remove
   // // HACK: development
   // counter += 1
   // if (counter < 3) {
@@ -72,24 +89,10 @@ server.on("connection", function (socket) {
       return
     }
     switch (command) {
-      case ".help":
-        player.tell(`=============
-Dostupne prikazy:
-  .help - tento help
-  .look - napise co vidi
-  .go - presunie ta do lokacie
-  .pick <item name> - zdvihne <item name>
-  .drop <item name> - zahodi <item name>
-  .combine <item name>, <item name>, ... - skombinuje zadane polozky
-  .recepies - vypise recepty // TODO
-  .say - povie do lokacie // DISABLED
-  .yell - povie vsetkym hracom // DISABLED
-  .stats - ukaze tvoje statistiky
-  .challenge - vyzvi na suboj hraca
-    .attack <num> - zautoci s hodnotou <num>
-    .buff - buffnes svoje sance na dalsi utok
-  .r - zopakuje posledny prikaz
-`)
+      case getCommandAlias(".help"):
+        player.tell(
+          getTranslation("help_message").replaceAll("%devider", "=============")
+        )
         break
 
       case ".look":

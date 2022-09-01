@@ -500,8 +500,15 @@ class Item {
   }
 }
 
+/*
+ * Game now requires server-settings JSON and translations JSON in order to initialize properly
+ * See ./utils.js and ./server.js
+ */
 class Game {
-  constructor() {
+  constructor(translations, settings) {
+    this.translations = translations
+    this.settings = settings
+
     this.players = []
     this.recepies = []
     this.initialize()

@@ -1,0 +1,45 @@
+{
+    "room_registry": {
+        "rooms": [
+            "TODO"
+        ]
+    },
+
+    "server_settings": {
+        "port": 8080,
+
+        "localization_used": "sk_SK",
+
+        "chat_spam_protection": true,
+        "controll_max_connections": true,
+        "max_players": 30,
+        "max_messages_per_minute": 10,
+        "max_inactivity_minutes": 8,
+        "max_inventory_size": 10,
+
+        "chat_permission": true,
+        "kill_permission": true
+    }, 
+
+    "command_aliases": {
+        ".r": ".r",
+        ".help": ".rick",
+        ".look": ".look",
+        ".go": ".go",
+        ".stats": ".stats",
+        ".challenge": ".challenge",
+        ".accept": ".accept",
+        ".decline": ".decline",
+        ".attack": ".attack",
+        ".buff": ".buff",
+        ".classes": ".classes",
+        ".pick": ".pick",
+        ".drop": ".drop",
+        ".inventory": ".inventory",
+        ".use": ".use",
+        ".combine": ".combine",
+        ".debug_location": ".debug_location",
+        ".tp": ".tp",
+        ".hit": ".hit"
+    }
+}
