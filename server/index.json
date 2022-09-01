@@ -43,6 +43,11 @@
         ".debug_locations": ".debug_locations",
         ".tp": ".tp",
         ".hit": ".hit",
-        ".recipies": ".recipies"
-    }
+        ".recepies": ".recepies"
+    },
+
+    "paused_commands": [
+        ".say",
+        ".yell"
+    ]
 }

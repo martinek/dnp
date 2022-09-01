@@ -14,11 +14,18 @@ const server = new Net.Server()
 const game = new Game(TRANSLATIONS, SETTINGS)
 
 server.listen(port, function () {
-  console.log(`Server listening on:${port}.`)
+  console.log(`Server listening on: ${port}.`)
 })
 
 const getCommandAlias = (alName) => {
   return SETTINGS.command_aliases[alName]
+}
+
+const isBannedCommand = (alName) => {
+  for (const element of SETTINGS.paused_commands) {
+    if (element === alName) return true
+  }
+  return false
 }
 
 const getTranslation = (translation) => {
@@ -94,6 +101,12 @@ server.on("connection", function (socket) {
       player.tell("Dead man tells no tales")
       return
     }
+
+    if (isBannedCommand(getCommandAlias(command))) {
+      player.tell(getTranslation("server__player_interaction_disabled_command"))
+      return
+    }
+
     switch (command) {
       case getCommandAlias(".help"):
         player.tell(
