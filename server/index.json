@@ -23,9 +23,11 @@
 
     "command_aliases": {
         ".r": ".r",
-        ".help": ".rick",
+        ".help": ".help",
         ".look": ".look",
         ".go": ".go",
+        ".say": ".say",
+        ".yell": ".yell",
         ".stats": ".stats",
         ".challenge": ".challenge",
         ".accept": ".accept",
@@ -38,8 +40,9 @@
         ".inventory": ".inventory",
         ".use": ".use",
         ".combine": ".combine",
-        ".debug_location": ".debug_location",
+        ".debug_locations": ".debug_locations",
         ".tp": ".tp",
-        ".hit": ".hit"
+        ".hit": ".hit",
+        ".recipies": ".recipies"
     }
 }

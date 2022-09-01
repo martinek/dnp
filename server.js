@@ -22,7 +22,12 @@ const getCommandAlias = (alName) => {
 }
 
 const getTranslation = (translation) => {
-  return TRANSLATIONS[translation]
+  let toReturn = TRANSLATIONS[translation]
+
+  for (const element in SETTINGS.command_aliases)
+    toReturn = toReturn.replaceAll(`%${element}%`, getCommandAlias(element))
+
+  return toReturn
 }
 
 let counter = 0
@@ -73,13 +78,14 @@ server.on("connection", function (socket) {
         player.location = game.map.getRandomLocation()
         player.look()
         player.location.notifyEntering(player)
+        return // Class name would execute as command, issue discovered after implementing 'server__player_interaction_inv_command'
       } else {
         Profession.explain(player)
         return
       }
     }
 
-    if (input === ".r") {
+    if (input === getCommandAlias(".r")) {
       input = player.lastInput
     }
 
@@ -95,63 +101,63 @@ server.on("connection", function (socket) {
         )
         break
 
-      case ".look":
+      case getCommandAlias(".look"):
         player.look()
         break
 
-      case ".go":
+      case getCommandAlias(".go"):
         player.go(args.join(" "))
         break
 
-      // case ".say":
-      //   player.say(args.join(" "))
-      //   break
+      case getCommandAlias(".say"):
+        player.say(args.join(" "))
+        break
 
-      // case ".yell":
-      //   player.yell(args.join(" "))
-      //   break
+      case getCommandAlias(".yell"):
+        player.yell(args.join(" "))
+        break
 
-      case ".stats":
+      case getCommandAlias(".stats"):
         player.stats()
         break
 
-      case ".challenge":
+      case getCommandAlias(".challenge"):
         player.challenge(args.join(" "))
         break
 
-      case ".accept":
+      case getCommandAlias(".accept"):
         player.accept()
         break
 
-      case ".decline":
+      case getCommandAlias(".decline"):
         player.decline()
         break
 
-      case ".attack":
+      case getCommandAlias(".attack"):
         player.executeAttack(args[0])
         break
 
-      case ".buff":
+      case getCommandAlias(".buff"):
         player.executeBuff()
         break
 
-      case ".classes":
+      case getCommandAlias(".classes"):
         Profession.explain(player)
         break
 
-      case ".pick":
+      case getCommandAlias(".pick"):
         player.pick(args.join(" "))
         break
 
-      case ".drop":
+      case getCommandAlias(".drop"):
         player.drop(args.join(" "))
         break
 
-      case ".inventory":
+      case getCommandAlias(".inventory"):
         player.showInventory()
         break
 
-      case ".use":
+      case getCommandAlias(".use"):
         // .use pocitac, ev3 kocka, foo, booo
         // tool = "pocitac", material = "ev3 kocka"
         const [tool, material] = args
@@ -161,7 +167,7 @@ server.on("connection", function (socket) {
         player.use(tool, material)
         break
 
-      case ".combine":
+      case getCommandAlias(".combine"):
         // .combine lego kocka ,lego kocka, lego kocka, lego kocka
         const ingredients = args
           .join(" ")
@@ -170,26 +176,27 @@ server.on("connection", function (socket) {
         player.combine(ingredients)
         break
 
-      case ".debug_locations":
+      case getCommandAlias(".debug_locations"):
         game.debugLocations()
         break
 
-      case ".tp":
+      case getCommandAlias(".tp"):
         const newLocation = game.map.getLocation(args.join(" "))
         if (newLocation) {
           player.location = newLocation
         } else {
-          player.tell("invalid location")
+          player.tell(getTranslation("server__player_interaction_inv_location"))
         }
         break
 
-      case ".hit":
+      case getCommandAlias(".hit"):
         player.health -= Number(args[0])
         break
 
-      default:
+      default: {
+        player.tell(getTranslation("server__player_interaction_inv_command"))
         return
-        break
+      }
     }
     console.log(`Player ${player.name}: ${command}`)
 
