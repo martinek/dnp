@@ -1,54 +1,37 @@
 {
-    "room_registry": {
-        "rooms": [
-            "TODO"
-        ]
-    },
-
     "server_settings": {
         "port": 8080,
-
-        "localization_used": "sk_SK",
-
-        "chat_spam_protection": true,
-        "controll_max_connections": true,
-        "max_players": 30,
-        "max_messages_per_minute": 10,
-        "max_inactivity_minutes": 8,
-        "max_inventory_size": 10,
-
-        "chat_permission": true,
-        "kill_permission": true
+        "localization_used": "sk_SK"
     }, 
 
     "command_aliases": {
-        ".r": ".r",
-        ".help": ".help",
-        ".look": ".look",
-        ".go": ".go",
-        ".say": ".say",
-        ".yell": ".yell",
-        ".stats": ".stats",
-        ".challenge": ".challenge",
-        ".accept": ".accept",
-        ".decline": ".decline",
-        ".attack": ".attack",
-        ".buff": ".buff",
-        ".classes": ".classes",
-        ".pick": ".pick",
-        ".drop": ".drop",
-        ".inventory": ".inventory",
-        ".use": ".use",
-        ".combine": ".combine",
-        ".debug_locations": ".debug_locations",
-        ".tp": ".tp",
-        ".hit": ".hit",
-        ".recepies": ".recepies",
-        ".give": ".give"
+        "REPEAT": ".r",
+        "HELP": ".help",
+        "LOOK": ".look",
+        "GO": ".go",
+        "SAY": ".say",
+        "YELL": ".yell",
+        "STATS": ".stats",
+        "CHALLENGE": ".challenge",
+        "ACCEPT": ".accept",
+        "DECLINE": ".decline",
+        "ATTACK": ".attack",
+        "BUFF": ".buff",
+        "CLASSES": ".classes",
+        "PICK": ".pick",
+        "DROP": ".drop",
+        "INVENTORY": ".inventory",
+        "USE": ".use",
+        "COMBINE": ".combine",
+        "DEBUG_LOCATIONS": ".debug_locations",
+        "TP": ".tp",
+        "HIT": ".hit",
+        "RECEPIES": ".recepies",
+        "GIVE": ".give"
     },
 
-    "paused_commands": [
-        ".say",
-        ".yell"
+    "banned_commands": [
+        "SAY",
+        "YELL"
     ]
 }

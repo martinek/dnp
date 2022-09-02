@@ -1,12 +1,12 @@
 const Net = require("net")
 const fs = require("fs")
 const { Game, Player, Profession, Item } = require("./models")
-const { readJson } = require("./utils")
+const { loadJSON } = require("./utils")
 
 const SERVER_FOLDER_PATH = "./server"
-
-const SETTINGS = readJson(`${SERVER_FOLDER_PATH}/index.json`)
-const TRANSLATIONS = readJson(
+const SETTINGS = loadJSON(`${SERVER_FOLDER_PATH}/index.json`)
+const COMMANDS = SETTINGS.command_aliases
+const TRANSLATIONS = loadJSON(
   `${SERVER_FOLDER_PATH}/localization/${SETTINGS.server_settings.localization_used}.json`
 )
 
@@ -14,28 +14,24 @@ const port = SETTINGS.server_settings.port
 const server = new Net.Server()
 const game = new Game(TRANSLATIONS, SETTINGS)
 
-let admins = JSON.parse(fs.readFileSync("admins.json"))
+let admins = loadJSON("admins.json")
 
 server.listen(port, function () {
   console.log(`Server listening on: ${port}.`)
 })
 
-const getCommandAlias = (alName) => {
-  return SETTINGS.command_aliases[alName]
-}
+const isBannedCommand = (alName) => SETTINGS.banned_commands.includes(alName)
+const getCommandKey = (alName) =>
+  Object.keys(COMMANDS).find((key) => COMMANDS[key] === alName)
 
-const isBannedCommand = (alName) => {
-  for (const element of SETTINGS.paused_commands) {
-    if (element === alName) return true
-  }
-  return false
-}
-
-const getTranslation = (translation) => {
+const getTranslation = (translation, replacements = {}) => {
   let toReturn = TRANSLATIONS[translation]
 
-  for (const element in SETTINGS.command_aliases)
-    toReturn = toReturn.replaceAll(`%${element}%`, getCommandAlias(element))
+  for (const replacement in replacements)
+    toReturn = toReturn.replace(`%${replacement}%`, replacements[replacement])
+
+  for (const element in COMMANDS)
+    toReturn = toReturn.replaceAll(`%${element}%`, COMMANDS[element])
 
   return toReturn
 }
@@ -69,7 +65,7 @@ server.on("connection", function (socket) {
   console.log("A new connection has been established.")
 
   if (player.name === undefined) {
-    player.tell("Vitaj, napis si meno:")
+    player.tell(getTranslation("server.player.change_name_message"))
   }
 
   socket.on("data", function (chunk) {
@@ -77,9 +73,11 @@ server.on("connection", function (socket) {
 
     if (player.name === undefined) {
       player.name = input
-      player.tell(`Ahoj ${player.name}`)
+      player.tell(
+        getTranslation("server.welcome_message", { player: player.name })
+      )
       if (admins.find((e) => e.name === player.name) !== undefined) {
-        player.tell(`Password required on admin login`)
+        player.tell(getTranslation("server.player.admin.password_message"))
         player.admin = null
         return
       }
@@ -90,12 +88,12 @@ server.on("connection", function (socket) {
     }
     if (player.admin === null) {
       if (admins.find((e) => e.name === player.name).pwd === input) {
-        player.tell(`Logged in as admin`)
+        player.tell(getTranslation("server.player.admin.login_complete"))
         player.admin = true
         Profession.explain(player)
         console.log(`Player ${player.name} connected`)
       } else {
-        player.tell(`Invalid password`)
+        player.tell(getTranslation("server.player.admin.login_failed"))
       }
       return
     }
@@ -112,85 +110,85 @@ server.on("connection", function (socket) {
       }
     }
 
-    if (input === getCommandAlias(".r")) {
+    if (input === COMMANDS.REPEAT) {
       input = player.lastInput
     }
 
     const [command, ...args] = input.split(" ")
     if (player.isDead) {
-      player.tell("Dead man tells no tales")
+      player.tell(getTranslation("server.player.death_message"))
       return
     }
 
-    if (isBannedCommand(getCommandAlias(command))) {
-      player.tell(getTranslation("server__player_interaction_disabled_command"))
+    if (isBannedCommand(getCommandKey(command))) {
+      player.tell(getTranslation("server.player.disabled_command_message"))
       return
     }
 
     switch (command) {
-      case getCommandAlias(".help"):
+      case COMMANDS.HELP:
         player.tell(
-          getTranslation("help_message").replaceAll("%devider", "=============")
+          getTranslation("server.help_message", { devider: "=============" })
         )
         break
 
-      case getCommandAlias(".look"):
+      case COMMANDS.LOOK:
         player.look()
         break
 
-      case getCommandAlias(".go"):
+      case COMMANDS.GO:
         player.go(args.join(" "))
         break
 
-      case getCommandAlias(".say"):
+      case COMMANDS.SAY:
         player.say(args.join(" "))
         break
 
-      case getCommandAlias(".yell"):
+      case COMMANDS.YELL:
         player.yell(args.join(" "))
         break
 
-      case getCommandAlias(".stats"):
+      case COMMANDS.STATS:
         player.stats()
         break
 
-      case getCommandAlias(".challenge"):
+      case COMMANDS.CHALLENGE:
         player.challenge(args.join(" "))
         break
 
-      case getCommandAlias(".accept"):
+      case COMMANDS.ACCEPT:
         player.accept()
         break
 
-      case getCommandAlias(".decline"):
+      case COMMANDS.DECLINE:
         player.decline()
         break
 
-      case getCommandAlias(".attack"):
+      case COMMANDS.ATTACK:
         player.executeAttack(args[0])
         break
 
-      case getCommandAlias(".buff"):
+      case COMMANDS.BUFF:
         player.executeBuff()
         break
 
-      case getCommandAlias(".classes"):
+      case COMMANDS.CLASSES:
         Profession.explain(player)
         break
 
-      case getCommandAlias(".pick"):
+      case COMMANDS.PICK:
         player.pick(args.join(" "))
         break
 
-      case getCommandAlias(".drop"):
+      case COMMANDS.DROP:
         player.drop(args.join(" "))
         break
 
-      case getCommandAlias(".inventory"):
+      case COMMANDS.INVENTORY:
         player.showInventory()
         break
 
-      case getCommandAlias(".use"):
+      case COMMANDS.USE:
         // .use pocitac, ev3 kocka, foo, booo
         // tool = "pocitac", material = "ev3 kocka"
         const [tool, material] = args
@@ -200,12 +198,12 @@ server.on("connection", function (socket) {
         player.use(tool, material)
         break
 
-      case getCommandAlias(".give"):
+      case COMMANDS.GIVE:
         if (!player.checkAdmin()) return
         player.inventory.push(new Item(args.join(" ")))
         break
 
-      case getCommandAlias(".combine"):
+      case COMMANDS.COMBINE:
         // .combine lego kocka ,lego kocka, lego kocka, lego kocka
         const ingredients = args
           .join(" ")
@@ -214,25 +212,25 @@ server.on("connection", function (socket) {
         player.combine(ingredients)
         break
 
-      case getCommandAlias(".debug_locations"):
+      case COMMANDS.DEBUG_LOCATIONS:
         game.debugLocations()
         break
 
-      case getCommandAlias(".tp"):
+      case COMMANDS.TP:
         const newLocation = game.map.getLocation(args.join(" "))
         if (newLocation) {
           player.location = newLocation
         } else {
-          player.tell(getTranslation("server__player_interaction_inv_location"))
+          player.tell(getTranslation("server.player.invalid_location_message"))
         }
         break
 
-      case getCommandAlias(".hit"):
+      case COMMANDS.HIT:
         player.health -= Number(args[0])
         break
 
       default: {
-        player.tell(getTranslation("server__player_interaction_inv_command"))
+        player.tell(getTranslation("server.player.invalid_command_message"))
         return
       }
     }

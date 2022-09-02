@@ -1,13 +1,13 @@
 {
-    "help_message": "%devider%Dostupne prikazy:\n  %.help% - tento help\n  %.look% - napise co vidi\n  %.go% - presunie ta do lokacie\n  %.pick% <item name> - zdvihne <item name>\n  %.drop% <item name> - zahodi <item name>\n  %.combine% <item name>, <item name>, ... - skombinuje zadane polozky\n  %.recepies% - vypise recepty // TODO\n  %.say% - povie do lokacie // DISABLED\n  %.yell% - povie vsetkym hracom // DISABLED\n  %.stats% - ukaze tvoje statistiky\n  %.challenge% - vyzvi na suboj hraca\n    %.attack% <num> - zautoci s hodnotou <num>\n    %.buff% - buffnes svoje sance na dalsi utok\n  %.r% - zopakuje posledny prikaz",
-    "server_welcome_message": "Ahoj, %player%",
-    "server__player_interaction_name": "Vitaj, napis si meno:",
-    "server__player_interaction_death": "Dead man tells no tales",
-    "server__player_interaction_inv_location": "Invalid location, did you spell it right?",
-    "server__player_interaction_inv_command": "Invalid command! use %.help%",
-    "server__player_interaction_disabled_command": "This command is disabled by an administrator!",
+    "server.help_message": "%devider%\nDostupne prikazy:\n  %HELP% - tento help\n  %LOOK% - napise co vidi\n  %GO% - presunie ta do lokacie\n  %PICK% <item name> - zdvihne <item name>\n  %DROP% <item name> - zahodi <item name>\n  %COMBINE% <item name>, <item name>, ... - skombinuje zadane polozky\n  %RECEPIES% - vypise recepty // TODO\n  %SAY% - povie do lokacie // DISABLED\n  %YELL% - povie vsetkym hracom // DISABLED\n  %STATS% - ukaze tvoje statistiky\n  %CHALLENGE% - vyzvi na suboj hraca\n    %ATTACK% <num> - zautoci s hodnotou <num>\n    %BUFF% - buffnes svoje sance na dalsi utok\n  %REPEAT% - zopakuje posledny prikaz",
+    "server.welcome_message": "Ahoj, %player%",
 
-    "in_game_translations": {
-        
-    }
+    "server.player.change_name_message": "Vitaj, napis si meno:",
+    "server.player.admin.password_message": "Password is required for admin login.",
+    "server.player.admin.login_complete": "Logged in as admin",
+    "server.player.admin.login_failed": "Incorrect password!",
+    "server.player.death_message": "Dead man tells no tales",
+    "server.player.invalid_location_message": "Invalid location, did you spell it right?",
+    "server.player.invalid_command_message": "Invalid command, did you spell it right! use %HELP%",
+    "server.player.disabled_command_message": "This command is disabled by an administrator!"
 }
