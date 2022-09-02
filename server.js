@@ -1,7 +1,7 @@
 const Net = require("net")
 const fs = require("fs")
 const { Game, Player, Profession, Item } = require("./models")
-const { loadJSON } = require("./utils")
+const { loadJSON, getTranslationFromTranslations } = require("./utils")
 
 const SERVER_FOLDER_PATH = "./server"
 const SETTINGS = loadJSON(`${SERVER_FOLDER_PATH}/index.json`)
@@ -13,8 +13,7 @@ const TRANSLATIONS = loadJSON(
 const port = SETTINGS.server_settings.port
 const server = new Net.Server()
 const game = new Game(TRANSLATIONS, SETTINGS)
-
-let admins = loadJSON("admins.json")
+const admins = loadJSON("admins.json")
 
 server.listen(port, function () {
   console.log(`Server listening on: ${port}.`)
@@ -25,10 +24,11 @@ const getCommandKey = (alName) =>
   Object.keys(COMMANDS).find((key) => COMMANDS[key] === alName)
 
 const getTranslation = (translation, replacements = {}) => {
-  let toReturn = TRANSLATIONS[translation]
-
-  for (const replacement in replacements)
-    toReturn = toReturn.replace(`%${replacement}%`, replacements[replacement])
+  let toReturn = getTranslationFromTranslations(
+    TRANSLATIONS,
+    translation,
+    replacements
+  )
 
   for (const element in COMMANDS)
     toReturn = toReturn.replaceAll(`%${element}%`, COMMANDS[element])
@@ -36,10 +36,10 @@ const getTranslation = (translation, replacements = {}) => {
   return toReturn
 }
 
-let counter = 0
+// let counter = 0
 
 server.on("connection", function (socket) {
-  const player = new Player(socket)
+  const player = new Player(socket, game)
 
   // TODO: Remove
   // // HACK: development

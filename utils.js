@@ -25,9 +25,34 @@ function loadJSON(json) {
     )
 }
 
+function getTranslationFromTranslations(
+  translations,
+  translation,
+  replacements = {}
+) {
+  let toReturn = translations[translation]
+
+  if (toReturn === undefined) {
+    throw new Error(
+      `Unable to find translation for ${translation} in ${JSON.stringify(
+        translations
+      )}`
+    )
+  }
+
+  for (const replacement in replacements)
+    toReturn = toReturn.replaceAll(
+      `%${replacement}%`,
+      replacements[replacement]
+    )
+
+  return toReturn
+}
+
 module.exports = {
   rand,
   arrayHash,
   sample,
   loadJSON,
+  getTranslationFromTranslations,
 }

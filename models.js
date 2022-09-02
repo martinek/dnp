@@ -1,10 +1,15 @@
-const { arrayHash, rand, sample } = require("./utils")
+const {
+  arrayHash,
+  rand,
+  sample,
+  getTranslationFromTranslations,
+} = require("./utils")
 
 const DIVIDER = "##########"
 const LONG_DIVIDER = DIVIDER + DIVIDER + DIVIDER + DIVIDER
 
 class Player {
-  constructor(socket) {
+  constructor(socket, game) {
     this._socket = socket
     this.name = undefined
     this.location = undefined
@@ -16,6 +21,7 @@ class Player {
     this.class = undefined
     this.lastInput = ""
     this.inventory = []
+    this.game = game
   }
 
   is(name = "") {
@@ -26,7 +32,7 @@ class Player {
   }
   checkAdmin() {
     if (!this.isAdmin()) {
-      this.tell(`Admin required`)
+      this.tell(this.game.getTranslation("server.player.admin.is_not_admin"))
       return false
     }
     return true
@@ -35,7 +41,11 @@ class Player {
   pickClass(enteredProfession) {
     const profession = Profession.getProfession(enteredProfession)
     if (profession === undefined) {
-      this.tell(`Nepoznam profesiu ${enteredProfession}! Skus to znova!`)
+      this.tell(
+        this.game.getTranslation("server.player.profession.invalid_message", {
+          enteredProfession: enteredProfession,
+        })
+      )
       return false
     } else {
       this.class = profession
@@ -44,7 +54,11 @@ class Player {
       this.defense += profession.def_mod
       this.attack += profession.atk_mod
       this.perk = profession.perk
-      this.tell(`Vybral si si profesiu ${enteredProfession}!`)
+      this.tell(
+        this.game.getTranslation("server.player.profession.selected_message", {
+          enteredProfession: enteredProfession,
+        })
+      )
       return true
     }
   }
@@ -69,14 +83,20 @@ Vidim itemy: ${this.location.items.map((item) => item.name).join(", ")}
   go(newLocationName) {
     const newLocation = this.location.map.getLocation(newLocationName)
     if (newLocation === undefined) {
-      this.tell(`Nepoznam ${newLocationName}`)
+      this.tell(
+        this.game.getTranslation("server.player.invalid_location_message", {
+          location: newLocationName,
+        })
+      )
     } else if (this.location.getConnection(newLocation.name)) {
       this.location.notifyLeaving(this)
       this.location = newLocation
       this.look()
       this.location.notifyEntering(this)
     } else {
-      this.tell(`Neda sa!`)
+      this.tell(
+        this.game.getTranslation("server.player.unable_to_enter_location")
+      )
     }
   }
 
@@ -107,14 +127,25 @@ Statistiky:
   challenge(otherPlayerName) {
     const otherPlayer = this.location.getPlayer(otherPlayerName)
     if (otherPlayer === undefined) {
-      this.tell("Hraca nevidim")
+      this.tell(this.game.getTranslation("server.player.combat.invalid_target"))
     } else if (otherPlayer === this) {
-      this.tell("Nemozes bojovat sam zo sebou!")
+      this.tell(
+        this.game.getTranslation("server.player.combat.suicidal_target")
+      )
     } else {
       otherPlayer.challengedBy = this
-      otherPlayer.tell(`${this.name} ta vyziva na boj (.accept / .decline)`)
+      otherPlayer.tell(
+        this.game.getTranslation(
+          "server.player.combat.received_request_message",
+          { player: this.name }
+        )
+      )
       this.challenging = otherPlayer
-      this.tell(`Vyzval si na suboj ${otherPlayer.name}`)
+      this.tell(
+        this.game.getTranslation("server.player.combat.sent_request_message", {
+          player: otherPlayer.name,
+        })
+      )
     }
   }
 
@@ -124,8 +155,16 @@ Statistiky:
       this.challengedBy = undefined
       this.inCombatWith.challenging = undefined
       this.inCombatWith.inCombatWith = this
-      this.tell(`Si v suboji s ${this.inCombatWith.name}`)
-      this.inCombatWith.tell(`Si v suboji s ${this.name}`)
+      this.tell(
+        this.game.getTranslation("server.player.combat.fight_begin_message", {
+          player: this.inCombatWith.name,
+        })
+      )
+      this.inCombatWith.tell(
+        this.game.getTranslation("server.player.combat.fight_begin_message", {
+          player: this.name,
+        })
+      )
 
       const combat = new Combat(this.inCombatWith, this)
       this.combat = combat
@@ -136,25 +175,35 @@ Statistiky:
 
   decline() {
     if (this.challengedBy) {
-      this.challengedBy.tell(`${this.name} neprijal vyzvu`)
+      this.challengedBy.tell(
+        this.game.getTranslation("server.player.combat.request_denied", {
+          player: this.name,
+        })
+      )
       this.challengedBy.challenging = undefined
       this.challengedBy = undefined
-      this.tell("Neprijal si vyzvu")
+      this.tell(
+        this.game.getTranslation(
+          "server.player.combat.request_denied_challenged"
+        )
+      )
     }
   }
 
   executeAttack(amountStr) {
     if (!this.combat || this.combat.turn !== this) {
-      this.tell("Nie si na tahu / v combate")
+      this.tell(this.game.getTranslation("server.player.combat.not_your_turn"))
       return
     }
 
     let amount = Number(amountStr)
     if (isNaN(amount)) {
-      this.tell("Kolko?")
+      this.tell(this.game.getTranslation("server.player.combat.NaN_attack"))
       return
     } else if (amount > 8) {
-      this.tell("Nie az tak silno")
+      this.tell(
+        this.game.getTranslation("server.player.combat.too_strong_attack")
+      )
       return
     }
 
@@ -169,8 +218,17 @@ Statistiky:
 
     if (!isHit) {
       this.combat.tellAll(
-        `Hrac ${this.name} netrafil (${roll} + ${this.attack} + ${this.buff} / ${target} (10 + ${amount} + ${targetDef}))`
+        this.game.getTranslation("server.player.combat.didnt_hit", {
+          attacker: this.name,
+          roll: roll,
+          attack: this.attack,
+          buff: this.buff,
+          target: target,
+          amount: amount,
+          targetDef: targetDef,
+        })
       )
+
       this.buff = 1
       this.combat.nextTurn()
       this.combat.reportTurn()
@@ -178,23 +236,32 @@ Statistiky:
     }
 
     if (perkProc == "crit") {
-      this.combat.tellAll("Critical hit! (1.5x)")
+      this.combat.tellAll(this.game.getTranslation("server.player.combat.crit"))
       amount *= 1.5
     } else if (perkProc == "no_def") {
-      this.combat.tellAll("No defense!")
+      this.combat.tellAll(
+        this.game.getTranslation("server.player.combat.no_def")
+      )
     }
 
     if (this.inCombatWith.perk === "block") {
       // try rolling for block proc
       if (rand(1, 21) > 14) {
-        this.combat.tellAll(`Blocked!`)
+        this.combat.tellAll(
+          this.game.getTranslation("server.player.combat.blocked")
+        )
         amount = 0
       }
     }
 
     this.buff = 1
     this.inCombatWith.takeHit(amount)
-    this.combat.tellAll(`Hrac ${this.name} trafil za ${amount}`)
+    this.combat.tellAll(
+      this.game.getTranslation("server.player.combat.player_hit", {
+        player: this.name,
+        amount: amount,
+      })
+    )
 
     if (!this.inCombatWith.isDead) {
       this.combat.nextTurn()
@@ -204,9 +271,13 @@ Statistiky:
 
     this.inCombatWith.dropAllItems()
     this.allPlayers().forEach((p) =>
-      p.tell(`${LONG_DIVIDER}
-${this.name} zabil ${this.inCombatWith.name}
-${LONG_DIVIDER}`)
+      p.tell(
+        this.game.getTranslation("server.player.combat.end_death", {
+          long: LONG_DIVIDER,
+          killer: this.name,
+          killed: this.inCombatWith.name,
+        })
+      )
     )
     this.combat.end()
   }
@@ -219,11 +290,16 @@ ${LONG_DIVIDER}`)
 
   executeBuff() {
     if (!this.combat || this.combat.turn !== this) {
-      this.tell("Nie si na tahu / v combate")
+      this.tell(this.game.getTranslation("server.player.combat.not_your_turn"))
       return
     }
     this.buff += 0.5 //(*1.5)
-    this.combat.tellAll(`Hrac ${this.name} sa buffuje!(${this.buff})`)
+    this.combat.tellAll(
+      this.game.getTranslation("server.player.combat.execute_buff", {
+        player: this.name,
+        buff: this.buff,
+      })
+    )
 
     this.combat.nextTurn()
     this.combat.reportTurn()
@@ -243,12 +319,20 @@ ${LONG_DIVIDER}`)
       if (this.location.items[i].isPickable()) {
         const removed = this.location.items.splice(i, 1)[0]
         this.inventory.push(removed)
-        this.tell(`Zdvihol si ${removed.name}`)
+        this.tell(
+          this.game.getTranslation("server.player.items.took", {
+            item: removed.name,
+          })
+        )
       } else {
-        this.tell("Not today Rambo!")
+        this.tell(
+          this.game.getTranslation("server.player.items.unable_to_take")
+        )
       }
     } else {
-      this.tell("Co chces zdvihnut?")
+      this.tell(
+        this.game.getTranslation("server.player.items.unable_to_find_item")
+      )
     }
   }
 
@@ -257,9 +341,15 @@ ${LONG_DIVIDER}`)
       const i = this.inventory.findIndex((item) => item.is(itemName))
       const removed = this.inventory.splice(i, 1)[0]
       this.location.items.push(removed)
-      this.tell(`Zahodil si ${removed.name}`)
+      this.tell(
+        this.game.getTranslation("server.player.items.drop", {
+          drop: removed.name,
+        })
+      )
     } else {
-      this.tell("Co chces zahodit?")
+      this.tell(
+        this.game.getTranslation("server.player.items.invalid_item_drop")
+      )
     }
   }
 
@@ -269,7 +359,7 @@ ${LONG_DIVIDER}`)
         const toolIndex = this.location.items.findIndex((item) => item.is(tool))
         const result = this.location.items[toolIndex].use(material, this)
         if (result === false) {
-          this.tell("To sa neda takto pouzit")
+          this.tell(this.game.getTranslation("server.player.use.fail"))
           return
         }
 
@@ -280,14 +370,18 @@ ${LONG_DIVIDER}`)
         }
 
         if (result !== true) {
-          this.tell(`Vyrobil si: ${result.name}`)
+          this.tell(
+            this.game.getTranslation("server.player.use.success", {
+              result: result.name,
+            })
+          )
           this.showInventory()
         }
       } else {
-        this.tell("To nemas")
+        this.tell(this.game.getTranslation("server.player.use.missing_item"))
       }
     } else {
-      this.tell("V tejto lokacii to neni")
+      this.tell(this.game.getTranslation("server.player.use.invalid_location"))
     }
   }
 
@@ -297,14 +391,14 @@ ${LONG_DIVIDER}`)
       (recepie) => arrayHash(recepie.ingredients) === needle
     )
     if (recepie === undefined) {
-      this.tell("Nope!")
+      this.tell(this.game.getTranslation("server.player.combine.fail"))
       return
     }
     const tmpInventory = this.inventory.slice(0)
     for (const ingredient of ingredients) {
       const idx = tmpInventory.findIndex((item) => item.is(ingredient))
       if (idx === -1) {
-        this.tell("Nemas vsetko co potrebujes v inventari")
+        this.tell(this.game.getTranslation("server.player.combine.not_enough"))
         return
       }
       tmpInventory.splice(idx, 1)
@@ -312,12 +406,16 @@ ${LONG_DIVIDER}`)
     this.inventory = tmpInventory
     recepie.result.forEach((rName) => {
       this.inventory.push(new Item(rName))
-      this.tell(`Vyrobil si: ${rName}`)
+      this.tell(
+        this.game.getTranslation("server.player.combine.success", {
+          result: rName,
+        })
+      )
 
       if (rName === "robot") {
         const time = startTime - Date.now()
         this.allPlayers().forEach((p) => {
-          p.tell(`MAME ROBOTA, trvalo to: ${time}`)
+          p.tell(this.game.getTranslation("server.game.goal_satisfied"))
         })
       }
     })
@@ -362,14 +460,22 @@ class Location {
   notifyEntering(enteringPlayer) {
     this.players().forEach((p) => {
       if (p === enteringPlayer) return
-      p.tell(`${enteringPlayer.name} vosiel do miestnosti`)
+      p.tell(
+        this.map.game.getTranslation("server.room.entering_player", {
+          enteringPlayer: enteringPlayer.name,
+        })
+      )
     })
   }
 
   notifyLeaving(leavingPlayer) {
     this.players().forEach((p) => {
       if (p === leavingPlayer) return
-      p.tell(`${leavingPlayer.name} odisiel z miestnosti`)
+      p.tell(
+        this.map.game.getTranslation("server.room.leaving_player", {
+          leavingPlayer: leavingPlayer.name,
+        })
+      )
     })
   }
 
@@ -503,7 +609,11 @@ class Item {
     }
     if (this.is("lekarnicka 3001")) {
       player.health = player.base_health
-      player.tell(`Pouzil si lekarnicku. Tvoje HP je: ${player.health}`)
+      player.tell(
+        player.game.getTranslation("server.player.heal_action", {
+          health: player.health,
+        })
+      )
       return true
     }
     return false
@@ -570,6 +680,14 @@ class Game {
       }
       location.spawnItem(item)
     })
+  }
+
+  getTranslation(translation, replacements = {}) {
+    return getTranslationFromTranslations(
+      this.translations,
+      translation,
+      replacements
+    )
   }
 
   debugLocations() {
