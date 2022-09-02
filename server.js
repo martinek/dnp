@@ -1,5 +1,6 @@
 const Net = require("net")
-const { Game, Player, Profession } = require("./models")
+const fs = require("fs")
+const { Game, Player, Profession, Item } = require("./models")
 const { readJson } = require("./utils")
 
 const SERVER_FOLDER_PATH = "./server"
@@ -12,6 +13,8 @@ const TRANSLATIONS = readJson(
 const port = SETTINGS.server_settings.port
 const server = new Net.Server()
 const game = new Game(TRANSLATIONS, SETTINGS)
+
+let admins = JSON.parse(fs.readFileSync("admins.json"))
 
 server.listen(port, function () {
   console.log(`Server listening on: ${port}.`)
@@ -75,8 +78,25 @@ server.on("connection", function (socket) {
     if (player.name === undefined) {
       player.name = input
       player.tell(`Ahoj ${player.name}`)
+      if (admins.find((e) => e.name === player.name) !== undefined) {
+        player.tell(`Password required on admin login`)
+        player.admin = null
+        return
+      }
+      player.admin = false
       Profession.explain(player)
       console.log(`Player ${player.name} connected`)
+      return
+    }
+    if (player.admin === null) {
+      if (admins.find((e) => e.name === player.name).pwd === input) {
+        player.tell(`Logged in as admin`)
+        player.admin = true
+        Profession.explain(player)
+        console.log(`Player ${player.name} connected`)
+      } else {
+        player.tell(`Invalid password`)
+      }
       return
     }
 
@@ -178,6 +198,11 @@ server.on("connection", function (socket) {
           .split(",")
           .map((s) => s.trim())
         player.use(tool, material)
+        break
+
+      case getCommandAlias(".give"):
+        if (!player.checkAdmin()) return
+        player.inventory.push(new Item(args.join(" ")))
         break
 
       case getCommandAlias(".combine"):

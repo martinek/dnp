@@ -21,6 +21,16 @@ class Player {
   is(name = "") {
     return this.name.toLowerCase() === name.toLowerCase()
   }
+  isAdmin() {
+    return this.admin === true
+  }
+  checkAdmin() {
+    if (!this.isAdmin()) {
+      this.tell(`Admin required`)
+      return false
+    }
+    return true
+  }
 
   pickClass(enteredProfession) {
     const profession = Profession.getProfession(enteredProfession)
