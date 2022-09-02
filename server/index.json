@@ -43,7 +43,8 @@
         ".debug_locations": ".debug_locations",
         ".tp": ".tp",
         ".hit": ".hit",
-        ".recepies": ".recepies"
+        ".recepies": ".recepies",
+        ".give": ".give"
     },
 
     "paused_commands": [
