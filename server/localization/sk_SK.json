@@ -1,0 +1,59 @@
+{
+    "server.help_message": "%devider%\nDostupne prikazy:\n  %HELP% - tento help\n  %LOOK% - napise co vidi\n  %GO% - presunie ta do lokacie\n  %PICK% <item name> - zdvihne <item name>\n  %DROP% <item name> - zahodi <item name>\n  %COMBINE% <item name>, <item name>, ... - skombinuje zadane polozky\n  %RECEPIES% - vypise recepty // TODO\n  %SAY% - povie do lokacie // DISABLED\n  %YELL% - povie vsetkym hracom // DISABLED\n  %STATS% - ukaze tvoje statistiky\n  %CHALLENGE% - vyzvi na suboj hraca\n    %ATTACK% <num> - zautoci s hodnotou <num>\n    %BUFF% - buffnes svoje sance na dalsi utok\n  %REPEAT% - zopakuje posledny prikaz",
+    "server.welcome_message": "Ahoj, %player%",
+
+    "server.player.change_name_message": "Vitaj, napis si meno:",
+    "server.player.death_message": "Dead man tells no tales",
+    "server.player.invalid_location_message": "Nepoznam %location%",
+    "server.player.invalid_command_message": "Invalid command, did you spell it right? use %HELP%",
+    "server.player.disabled_command_message": "This command is disabled by an administrator!",
+    "server.player.unable_to_enter_location": "Neda sa!",
+
+    "server.player.admin.password_message": "Password is required for admin login.",
+    "server.player.admin.login_complete": "Logged in as admin",
+    "server.player.admin.login_failed": "Incorrect password!",
+    "server.player.admin.is_not_admin": "Admin required!",
+
+    "server.player.profession.invalid_message": "Nepoznam profesiu %enteredProfession%, skus znova!",
+    "server.player.profession.selected_message": "Vybral si si profesiu %enteredProfession%!",
+
+    "server.player.combat.invalid_target": "Hraca nevidim",
+    "server.player.combat.suicidal_target": "Nemozes bojovat sam so sebou!",
+    "server.player.combat.received_request_message": "%player% ta vyziva na suboj",
+    "server.player.combat.sent_request_message": "Vyzval si na suboj %player%!",
+    "server.player.combat.fight_begin_message": "Si v suboji s %player%",
+    "server.player.combat.request_denied": "%player% neprijal vyzvu",
+    "server.player.combat.request_denied_challenged": "Neprijal si vyzvu",
+    "server.player.combat.not_your_turn": "Nie si na tahu alebo v combate",
+    "server.player.combat.NaN_attack": "Kolko?",
+    "server.player.combat.too_strong_attack": "Nie az tak silno.",
+    "server.player.combat.didnt_hit": "Hrac %attacker% netrafil (%calculation%)",
+    "server.player.combat.crit": "Critical hit! (1.5x)",
+    "server.player.combat.no_def": "No defense!",
+    "server.player.combat.blocked": "Blocked!",
+    "server.player.combat.player_hit": "Hrac %player% trafil za %amount%",
+    "server.player.combat.end_death": "%long%\n%killer% zabil %killed%\n%long%",
+    "server.player.combat.execute_buff": "Hrac %player% sa buffuje! (%buff%)",
+
+    "server.player.items.took": "Zdvihol si %item%",
+    "server.player.items.unable_to_take": "Not today Rambo!",
+    "server.player.items.unable_to_find_item": "Co chces zdvihnut?",
+    "server.player.items.drop": "Zahodil si %drop%",
+    "server.player.items.invalid_item_drop": "Co chces zahodit?",
+
+    "server.player.use.fail": "To sa neda takto pouzit!",
+    "server.player.use.success": "Vyrobil si %result%",
+    "server.player.use.missing_item": "To nemas",
+    "server.player.use.invalid_location": "V tejto lokacii to neni",
+
+    "server.player.combine.fail": "Nope!",
+    "server.player.combine.not_enough": "Nemas vsetko co potrebujes v inventari",
+    "server.player.combine.success": "Vyrobil si %result%",
+
+    "server.player.heal_action": "Pouzil si lekarnicku, Tvoje HP je: %health%",
+
+    "server.room.entering_player": "%enteringPlayer% vosiel do miestnosti",
+    "server.room.leaving_player": "%leavingPlayer% odisiel z miestnosti",
+
+    "server.game.goal_satisfied": "MAME ROBOTA! Trvalo nam to: %time%"
+}

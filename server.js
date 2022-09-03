@@ -1,22 +1,45 @@
 const Net = require("net")
 const fs = require("fs")
 const { Game, Player, Profession, Item } = require("./models")
-const port = 8080
+const { loadJSON, getTranslationFromTranslations } = require("./utils")
 
+const SERVER_FOLDER_PATH = "./server"
+const SETTINGS = loadJSON(`${SERVER_FOLDER_PATH}/index.json`)
+const COMMANDS = SETTINGS.command_aliases
+const TRANSLATIONS = loadJSON(
+  `${SERVER_FOLDER_PATH}/localization/${SETTINGS.server_settings.localization_used}.json`
+)
+
+const port = SETTINGS.server_settings.port
 const server = new Net.Server()
-const game = new Game()
-
-let admins = JSON.parse(fs.readFileSync("admins.json"))
+const game = new Game(TRANSLATIONS, SETTINGS)
+const admins = loadJSON("admins.json")
 
 server.listen(port, function () {
-  console.log(`Server listening on:${port}.`)
+  console.log(`Server listening on: ${port}.`)
 })
 
-let counter = 0
+const isBannedCommand = (alName) => SETTINGS.banned_commands.includes(alName)
+const getCommandKey = (alName) =>
+  Object.keys(COMMANDS).find((key) => COMMANDS[key] === alName)
+
+const getTranslation = (translation, replacements = {}) => {
+  let toReturn = getTranslationFromTranslations(
+    TRANSLATIONS,
+    translation,
+    replacements
+  )
+  for (const element in COMMANDS)
+    toReturn = toReturn.replaceAll(`%${element}%`, COMMANDS[element])
+  return toReturn
+}
+
+// let counter = 0
 
 server.on("connection", function (socket) {
-  const player = new Player(socket)
+  const player = new Player(socket, game)
 
+  // TODO: Remove
   // // HACK: development
   // counter += 1
   // if (counter < 3) {
@@ -40,7 +63,7 @@ server.on("connection", function (socket) {
   console.log("A new connection has been established.")
 
   if (player.name === undefined) {
-    player.tell("Vitaj, napis si meno:")
+    player.tell(getTranslation("server.player.change_name_message"))
   }
 
   socket.on("data", function (chunk) {
@@ -48,9 +71,11 @@ server.on("connection", function (socket) {
 
     if (player.name === undefined) {
       player.name = input
-      player.tell(`Ahoj ${player.name}`)
+      player.tell(
+        getTranslation("server.welcome_message", { player: player.name })
+      )
       if (admins.find((e) => e.name === player.name) !== undefined) {
-        player.tell(`Password required on admin login`)
+        player.tell(getTranslation("server.player.admin.password_message"))
         player.admin = null
         return
       }
@@ -61,12 +86,12 @@ server.on("connection", function (socket) {
     }
     if (player.admin === null) {
       if (admins.find((e) => e.name === player.name).pwd === input) {
-        player.tell(`Logged in as admin`)
+        player.tell(getTranslation("server.player.admin.login_complete"))
         player.admin = true
         Profession.explain(player)
         console.log(`Player ${player.name} connected`)
       } else {
-        player.tell(`Invalid password`)
+        player.tell(getTranslation("server.player.admin.login_failed"))
       }
       return
     }
@@ -76,104 +101,92 @@ server.on("connection", function (socket) {
         player.location = game.map.getRandomLocation()
         player.look()
         player.location.notifyEntering(player)
+        return // Class name would execute as command, issue discovered after implementing 'server__player_interaction_inv_command'
       } else {
         Profession.explain(player)
         return
       }
     }
 
-    if (input === ".r") {
+    if (input === COMMANDS.REPEAT) {
       input = player.lastInput
     }
 
     const [command, ...args] = input.split(" ")
     if (player.isDead) {
-      player.tell("Dead man tells no tales")
+      player.tell(getTranslation("server.player.death_message"))
       return
     }
+
+    if (isBannedCommand(getCommandKey(command))) {
+      player.tell(getTranslation("server.player.disabled_command_message"))
+      return
+    }
+
     switch (command) {
-      case ".help":
-        player.tell(`=============
-Dostupne prikazy:
-  .help - tento help
-  .look - napise co vidi
-  .go - presunie ta do lokacie
-  .pick <item name> - zdvihne <item name>
-  .drop <item name> - zahodi <item name>
-  .combine <item name>, <item name>, ... - skombinuje zadane polozky
-  .recepies - vypise recepty // TODO
-  .say - povie do lokacie // DISABLED
-  .yell - povie vsetkym hracom // DISABLED
-  .stats - ukaze tvoje statistiky
-  .challenge - vyzvi na suboj hraca
-    .attack <num> - zautoci s hodnotou <num>
-    .buff - buffnes svoje sance na dalsi utok
-  .r - zopakuje posledny prikaz
-`)
+      case COMMANDS.HELP:
+        player.tell(
+          getTranslation("server.help_message", { devider: "=============" })
+        )
         break
 
-      case ".look":
+      case COMMANDS.LOOK:
         player.look()
         break
 
-      case ".go":
+      case COMMANDS.GO:
         player.go(args.join(" "))
         break
 
-      // case ".say":
-      //   player.say(args.join(" "))
-      //   break
+      case COMMANDS.SAY:
+        player.say(args.join(" "))
+        break
 
-      // case ".yell":
-      //   player.yell(args.join(" "))
-      //   break
+      case COMMANDS.YELL:
+        player.yell(args.join(" "))
+        break
 
-      case ".stats":
+      case COMMANDS.STATS:
         player.stats()
         break
 
-      case ".challenge":
+      case COMMANDS.CHALLENGE:
         player.challenge(args.join(" "))
         break
 
-      case ".accept":
+      case COMMANDS.ACCEPT:
         player.accept()
         break
 
-      case ".decline":
+      case COMMANDS.DECLINE:
         player.decline()
         break
 
-      case ".attack":
+      case COMMANDS.ATTACK:
         player.executeAttack(args[0])
         break
 
-      case ".buff":
+      case COMMANDS.BUFF:
         player.executeBuff()
         break
 
-      case ".classes":
+      case COMMANDS.CLASSES:
         Profession.explain(player)
         break
 
-      case ".pick":
+      case COMMANDS.PICK:
         player.pick(args.join(" "))
         break
 
-      case ".drop":
+      case COMMANDS.DROP:
         player.drop(args.join(" "))
         break
 
-      case ".inventory":
+      case COMMANDS.INVENTORY:
         player.showInventory()
         break
 
-      case ".give":
-        if (!player.checkAdmin()) return
-        player.inventory.push(new Item(args.join(" ")))
-        break
-
-      case ".use":
+      case COMMANDS.USE:
         // .use pocitac, ev3 kocka, foo, booo
         // tool = "pocitac", material = "ev3 kocka"
         const [tool, material] = args
@@ -183,7 +196,12 @@ Dostupne prikazy:
         player.use(tool, material)
         break
 
-      case ".combine":
+      case COMMANDS.GIVE:
+        if (!player.checkAdmin()) return
+        player.inventory.push(new Item(args.join(" ")))
+        break
+
+      case COMMANDS.COMBINE:
         // .combine lego kocka ,lego kocka, lego kocka, lego kocka
         const ingredients = args
           .join(" ")
@@ -192,26 +210,27 @@ Dostupne prikazy:
         player.combine(ingredients)
         break
 
-      case ".debug_locations":
+      case COMMANDS.DEBUG_LOCATIONS:
         game.debugLocations()
         break
 
-      case ".tp":
+      case COMMANDS.TP:
         const newLocation = game.map.getLocation(args.join(" "))
         if (newLocation) {
           player.location = newLocation
         } else {
-          player.tell("invalid location")
+          player.tell(getTranslation("server.player.invalid_location_message"))
         }
         break
 
-      case ".hit":
+      case COMMANDS.HIT:
         player.health -= Number(args[0])
         break
 
-      default:
+      default: {
+        player.tell(getTranslation("server.player.invalid_command_message"))
         return
-        break
+      }
     }
     console.log(`Player ${player.name}: ${command}`)
 

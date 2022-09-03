@@ -1,14 +1,14 @@
 {
   "name": "dnp",
   "version": "1.0.0",
-  "description": "",
+  "description": "Dungeons and Programmers server (LSTME 2022)",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start-server": "node server.js",
     "start": "electron ."
   },
-  "author": "",
+  "author": "LSTME",
   "license": "ISC",
   "devDependencies": {
     "electron": "^20.1.0"

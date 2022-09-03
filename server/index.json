@@ -1,0 +1,37 @@
+{
+    "server_settings": {
+        "port": 8080,
+        "localization_used": "sk_SK"
+    }, 
+
+    "command_aliases": {
+        "REPEAT": ".r",
+        "HELP": ".help",
+        "LOOK": ".look",
+        "GO": ".go",
+        "SAY": ".say",
+        "YELL": ".yell",
+        "STATS": ".stats",
+        "CHALLENGE": ".challenge",
+        "ACCEPT": ".accept",
+        "DECLINE": ".decline",
+        "ATTACK": ".attack",
+        "BUFF": ".buff",
+        "CLASSES": ".classes",
+        "PICK": ".pick",
+        "DROP": ".drop",
+        "INVENTORY": ".inventory",
+        "USE": ".use",
+        "COMBINE": ".combine",
+        "DEBUG_LOCATIONS": ".debug_locations",
+        "TP": ".tp",
+        "HIT": ".hit",
+        "RECEPIES": ".recepies",
+        "GIVE": ".give"
+    },
+
+    "banned_commands": [
+        "SAY",
+        "YELL"
+    ]
+}
