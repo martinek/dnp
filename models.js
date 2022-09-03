@@ -217,7 +217,7 @@ Statistiky:
     const isHit = totalRoll >= target
 
     if (!isHit) {
-      const calculation = `${roll} + ${this.attack} + ${this.buff} / ${target} (10 + ${amount} + ${targetDef}`
+      const calculation = `${roll} + ${this.attack} + ${this.buff} / ${target} (10 + ${amount} + ${targetDef})`
       const translation = this.game.getTranslation(
         "server.player.combat.didnt_hit",
         { calculation: calculation }
