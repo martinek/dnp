@@ -29,10 +29,8 @@ const getTranslation = (translation, replacements = {}) => {
     translation,
     replacements
   )
-
   for (const element in COMMANDS)
     toReturn = toReturn.replaceAll(`%${element}%`, COMMANDS[element])
-
   return toReturn
 }
 

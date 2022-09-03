@@ -27,7 +27,7 @@
     "server.player.combat.not_your_turn": "Nie si na tahu alebo v combate",
     "server.player.combat.NaN_attack": "Kolko?",
     "server.player.combat.too_strong_attack": "Nie az tak silno.",
-    "server.player.combat.didnt_hit": "Hrac %attacker% netrafil (%roll% + %attack% + %buff% / %target% (10 + %amount% + %targetDef%))",
+    "server.player.combat.didnt_hit": "Hrac %attacker% netrafil (%calculation%)",
     "server.player.combat.crit": "Critical hit! (1.5x)",
     "server.player.combat.no_def": "No defense!",
     "server.player.combat.blocked": "Blocked!",
