@@ -721,34 +721,19 @@ class Map {
       nameToLocation[jsonLocation.name] = location
       return location
     })
-    for (const jsonConnection of json.connections) {
-      let location1 = nameToLocation[jsonConnection.first]
-      let location2 = nameToLocation[jsonConnection.second]
-      if (location1 == undefined || location2 == undefined) {
-        console.log(`Invalid connection: ${jsonConnection}, skipping`)
-        continue
-      }
-      location1.connect(location2)
-    }
+    json.locations.forEach((jsonLocation) => {
+      nameToLocation[jsonLocation.name].connections = jsonLocation.connections
+        .map((connection) => nameToLocation[connection])
+        .filter((connection) => connection !== undefined)
+    })
   }
   saveToJson() {
     let json = {}
     json.locations = this.locations.map((location) => ({
       name: location.name,
       items: location.items.map((item) => item.name),
+      connections: location.connections.map((connection) => connection.name),
     }))
-    let jsonConnections = []
-    for (let location of this.locations) {
-      jsonConnections.push(
-        ...location.connections
-          .filter((connection) => location.name <= connection.name)
-          .map((connection) => ({
-            first: location.name,
-            second: connection.name,
-          }))
-      )
-    }
-    json.connections = jsonConnections
     return json
   }
   buildMap() {

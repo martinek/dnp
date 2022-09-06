@@ -206,6 +206,7 @@ server.on("connection", function (socket) {
           "map.json",
           JSON.stringify(game.map.saveToJson(), null, " ")
         )
+        player.tell("Game saved")
         break
       case COMMANDS.LOAD:
         if (!player.checkAdmin()) return

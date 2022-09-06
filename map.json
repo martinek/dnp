@@ -6,29 +6,29 @@
     "med",
     "zelezo",
     "kremik"
+   ],
+   "connections": [
+    "workshop",
+    "potulny obchodnik"
    ]
   },
   {
    "name": "workshop",
    "items": [
     "kladivo"
+   ],
+   "connections": [
+    "obchod"
    ]
   },
   {
    "name": "potulny obchodnik",
    "items": [
     "tajny recept"
+   ],
+   "connections": [
+    
    ]
-  }
- ],
- "connections": [
-  {
-   "first": "obchod",
-   "second": "workshop"
-  },
-  {
-   "first": "obchod",
-   "second": "potulny obchodnik"
   }
  ]
 }
