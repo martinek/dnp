@@ -1,0 +1,34 @@
+{
+ "locations": [
+  {
+   "name": "obchod",
+   "items": [
+    "med",
+    "zelezo",
+    "kremik"
+   ]
+  },
+  {
+   "name": "workshop",
+   "items": [
+    "kladivo"
+   ]
+  },
+  {
+   "name": "potulny obchodnik",
+   "items": [
+    "tajny recept"
+   ]
+  }
+ ],
+ "connections": [
+  {
+   "first": "obchod",
+   "second": "workshop"
+  },
+  {
+   "first": "obchod",
+   "second": "potulny obchodnik"
+  }
+ ]
+}
