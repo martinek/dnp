@@ -27,7 +27,9 @@
         "TP": ".tp",
         "HIT": ".hit",
         "RECEPIES": ".recepies",
-        "GIVE": ".give"
+        "GIVE": ".give",
+        "SAVE": ".save",
+        "LOAD": ".load"
     },
 
     "banned_commands": [

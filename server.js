@@ -200,6 +200,18 @@ server.on("connection", function (socket) {
         if (!player.checkAdmin()) return
         player.inventory.push(new Item(args.join(" ")))
         break
+      case COMMANDS.SAVE:
+        if (!player.checkAdmin()) return
+        fs.writeFileSync(
+          "map.json",
+          JSON.stringify(game.map.saveToJson(), null, " ")
+        )
+        player.tell("Game saved")
+        break
+      case COMMANDS.LOAD:
+        if (!player.checkAdmin()) return
+        game.reloadFromJson(JSON.parse(fs.readFileSync("map.json")))
+        break
 
       case COMMANDS.COMBINE:
         // .combine lego kocka ,lego kocka, lego kocka, lego kocka

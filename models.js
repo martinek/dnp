@@ -677,6 +677,14 @@ class Game {
       location.spawnItem(item)
     })
   }
+  reloadFromJson(json) {
+    this.map.loadFromJson(json)
+    this.players.forEach((player) => {
+      player.location = this.map.getRandomLocation()
+      player.tell("Game reloaded")
+      player.look()
+    })
+  }
 
   getTranslation(translation, replacements = {}) {
     return getTranslationFromTranslations(
@@ -705,7 +713,29 @@ class Map {
     this.locations = []
     this.buildMap()
   }
-
+  loadFromJson(json) {
+    let nameToLocation = {}
+    this.locations = json.locations.map((jsonLocation) => {
+      let location = new Location(this, jsonLocation.name)
+      jsonLocation.items.forEach((item) => location.spawnItem(new Item(item)))
+      nameToLocation[jsonLocation.name] = location
+      return location
+    })
+    json.locations.forEach((jsonLocation) => {
+      nameToLocation[jsonLocation.name].connections = jsonLocation.connections
+        .map((connection) => nameToLocation[connection])
+        .filter((connection) => connection !== undefined)
+    })
+  }
+  saveToJson() {
+    let json = {}
+    json.locations = this.locations.map((location) => ({
+      name: location.name,
+      items: location.items.map((item) => item.name),
+      connections: location.connections.map((connection) => connection.name),
+    }))
+    return json
+  }
   buildMap() {
     const location_vonku = new Location(this, "Vonku")
     const location_chodba = new Location(this, "Chodba")
